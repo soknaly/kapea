@@ -39,7 +39,7 @@
     "ioredis": "^5.5.0",
     "class-validator": "^0.14.1",
     "class-transformer": "^0.5.1",
-    "@sentry/node": "^9.5.0",
+    "@sentry/node": "^10.69.0",
     "prisma": "^6.5.0"
   },
   "devDependencies": {

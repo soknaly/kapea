@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kapea-retention-worker
+  namespace: kapea
+  labels:
+    app: kapea-retention-worker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kapea-retention-worker
+  template:
+    metadata:
+      labels:
+        app: kapea-retention-worker
+    spec:
+      containers:
+        - name: retention-worker
+          image: REGISTRY/kapea-retention-worker:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 3003
+              name: http
+          envFrom:
+            - configMapRef:
+                name: kapea-config
+            - secretRef:
+                name: kapea-secrets
+          livenessProbe:
+            httpGet:
+              path: /health/live
+              port: http
+            initialDelaySeconds: 20
+            periodSeconds: 30
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 250m
+              memory: 256Mi

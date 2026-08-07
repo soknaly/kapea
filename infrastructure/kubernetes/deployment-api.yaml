@@ -1,0 +1,65 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kapea-api
+  namespace: kapea
+  labels:
+    app: kapea-api
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: kapea-api
+  template:
+    metadata:
+      labels:
+        app: kapea-api
+    spec:
+      containers:
+        - name: api
+          image: REGISTRY/kapea-api:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 3000
+              name: http
+          envFrom:
+            - configMapRef:
+                name: kapea-config
+            - secretRef:
+                name: kapea-secrets
+          readinessProbe:
+            httpGet:
+              path: /health/ready
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health/live
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 15
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              cpu: "1"
+              memory: 1Gi
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kapea-api
+  namespace: kapea
+  labels:
+    app: kapea-api
+spec:
+  type: ClusterIP
+  selector:
+    app: kapea-api
+  ports:
+    - name: http
+      port: 80
+      targetPort: 3000

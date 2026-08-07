@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kapea-rust-scan-worker
+  namespace: kapea
+  labels:
+    app: kapea-rust-scan-worker
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: kapea-rust-scan-worker
+  template:
+    metadata:
+      labels:
+        app: kapea-rust-scan-worker
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001
+        runAsGroup: 1001
+        fsGroup: 1001
+        seccompProfile:
+          type: Localhost
+          localhostProfile: kapea-scan-worker.json
+      containers:
+        - name: scan-worker
+          image: REGISTRY/kapea-scan-worker:latest
+          imagePullPolicy: IfNotPresent
+          envFrom:
+            - configMapRef:
+                name: kapea-config
+            - secretRef:
+                name: kapea-secrets
+          volumeMounts:
+            - name: yara-rules
+              mountPath: /rules
+              readOnly: true
+            - name: workdir
+              mountPath: /tmp/kapea
+          resources:
+            requests:
+              cpu: 500m
+              memory: 512Mi
+            limits:
+              cpu: "2"
+              memory: 2Gi
+      volumes:
+        - name: yara-rules
+          configMap:
+            name: kapea-yara-rules
+        - name: workdir
+          emptyDir: {}

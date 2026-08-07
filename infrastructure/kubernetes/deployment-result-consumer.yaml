@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kapea-result-consumer
+  namespace: kapea
+  labels:
+    app: kapea-result-consumer
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kapea-result-consumer
+  template:
+    metadata:
+      labels:
+        app: kapea-result-consumer
+    spec:
+      containers:
+        - name: result-consumer
+          image: REGISTRY/kapea-result-consumer:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 3001
+              name: http
+          envFrom:
+            - configMapRef:
+                name: kapea-config
+            - secretRef:
+                name: kapea-secrets
+          livenessProbe:
+            httpGet:
+              path: /health/live
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 15
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi

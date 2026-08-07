@@ -1,0 +1,16 @@
+.git
+.github
+**/.env
+**/.env.*
+!**/.env.example
+**/node_modules
+**/dist
+**/coverage
+rust/target
+**/*.tsbuildinfo
+test-fixtures
+docs
+*.md
+!packages/**/README.md
+.cursor
+agent-transcripts

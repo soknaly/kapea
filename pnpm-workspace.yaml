@@ -1,0 +1,15 @@
+packages:
+  - "apps/*"
+  - "packages/*"
+
+autoInstallPeers: true
+strictPeerDependencies: false
+
+allowBuilds:
+  "@prisma/client": true
+  "@prisma/engines": true
+  "@scarf/scarf": true
+  esbuild: true
+  msgpackr-extract: true
+  prisma: true
+  unrs-resolver: true

@@ -1,0 +1,213 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: kapea
+      POSTGRES_PASSWORD: kapea
+      POSTGRES_DB: kapea
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U kapea -d kapea"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  minio:
+    image: minio/minio:latest
+    command: ["server", "/data", "--console-address", ":9001"]
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  minio-init:
+    image: minio/mc:latest
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set local http://minio:9000 minioadmin minioadmin &&
+      mc mb --ignore-existing local/quarantine &&
+      mc anonymous set none local/quarantine &&
+      echo 'quarantine bucket ready'
+      "
+    restart: "no"
+
+  clamav:
+    # Debian multi-arch image (amd64 + arm64). Alpine `clamav/clamav` is amd64-only.
+    image: clamav/clamav-debian:stable
+    ports:
+      - "3310:3310"
+    volumes:
+      - clamav_data:/var/lib/clamav
+    healthcheck:
+      test: ["CMD-SHELL", "clamdscan --ping 3 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 180s
+
+  prometheus:
+    image: prom/prometheus:v2.55.1
+    ports:
+      - "9090:9090"
+    volumes:
+      - ../prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+
+  grafana:
+    image: grafana/grafana:11.3.1
+    ports:
+      - "3301:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ../grafana/provisioning:/etc/grafana/provisioning:ro
+      - ../grafana/dashboards:/var/lib/grafana/dashboards:ro
+    depends_on:
+      - prometheus
+
+  # BullMQ queue `scan-jobs` (job name `scan.requested`) is backed by Redis.
+  # NestJS MessagingModule and the Rust scan-worker connect via REDIS_URL.
+
+  api:
+    build:
+      context: ../..
+      dockerfile: infrastructure/docker/Dockerfile.api
+    env_file: ../../.env
+    environment:
+      DATABASE_URL: postgresql://kapea:kapea@postgres:5432/kapea
+      REDIS_URL: redis://redis:6379
+      S3_ENDPOINT: http://minio:9000
+      CLAMAV_HOST: clamav
+      API_PORT: 3000
+    ports:
+      - "3000:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      minio-init:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  result-consumer:
+    build:
+      context: ../..
+      dockerfile: infrastructure/docker/Dockerfile.result-consumer
+    env_file: ../../.env
+    environment:
+      DATABASE_URL: postgresql://kapea:kapea@postgres:5432/kapea
+      REDIS_URL: redis://redis:6379
+      RESULT_CONSUMER_PORT: 3001
+    ports:
+      - "3001:3001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+
+  retention-worker:
+    build:
+      context: ../..
+      dockerfile: infrastructure/docker/Dockerfile.retention-worker
+    env_file: ../../.env
+    environment:
+      DATABASE_URL: postgresql://kapea:kapea@postgres:5432/kapea
+      S3_ENDPOINT: http://minio:9000
+      RETENTION_WORKER_PORT: 3003
+    ports:
+      - "3003:3003"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3003/health/live"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  scan-worker:
+    build:
+      context: ../..
+      dockerfile: infrastructure/docker/Dockerfile.scan-worker
+    env_file: ../../.env
+    environment:
+      REDIS_URL: redis://redis:6379
+      S3_ENDPOINT: http://minio:9000
+      CLAMAV_HOST: clamav
+      CLAMAV_PORT: 3310
+      YARA_RULES_PATH: /rules
+      WORK_DIR: /tmp/kapea
+    volumes:
+      - ../yara/rules:/rules:ro
+    depends_on:
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      minio-init:
+        condition: service_completed_successfully
+      clamav:
+        condition: service_healthy
+    restart: unless-stopped
+
+
+volumes:
+  postgres_data:
+  minio_data:
+  clamav_data:
+  prometheus_data:
+  grafana_data:

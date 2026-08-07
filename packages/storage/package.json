@@ -1,0 +1,25 @@
+{
+  "name": "@kapea/storage",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Multi-cloud quarantine object-storage (MinIO, S3, GCS, Azure)",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "echo 'no lint configured'",
+    "test": "echo 'no tests yet'"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.758.0",
+    "@aws-sdk/lib-storage": "^3.758.0",
+    "@azure/storage-blob": "^12.27.0",
+    "@google-cloud/storage": "^7.15.2",
+    "@nestjs/common": "^11.0.1",
+    "@nestjs/config": "^4.0.1"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.3"
+  }
+}

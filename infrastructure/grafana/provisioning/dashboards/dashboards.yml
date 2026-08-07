@@ -1,0 +1,11 @@
+apiVersion: 1
+
+providers:
+  - name: kapea
+    orgId: 1
+    folder: KAPEA
+    type: file
+    disableDeletion: false
+    editable: true
+    options:
+      path: /var/lib/grafana/dashboards

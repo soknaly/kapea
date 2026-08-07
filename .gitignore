@@ -1,0 +1,45 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build
+dist/
+build/
+*.tsbuildinfo
+target/
+rust/**/target/
+
+# Env
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# IDE / OS
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db
+
+# Logs & coverage
+logs/
+*.log
+coverage/
+.nyc_output/
+
+# Docker / local data
+infrastructure/docker/data/
+.tmp/
+tmp/
+quarantine/
+
+# Test artifacts
+*.lcov
+
+# Misc
+.turbo/
+.cache/
+
+# Local CLI tools (e.g. rarlab unrar — do not commit)
+tools/bin/

@@ -1,0 +1,38 @@
+# AppArmor profile stub for KAPEA Rust scan-worker
+#
+# Install (example — adjust paths for your host):
+#   sudo cp infrastructure/docker/scan-worker.apparmor /etc/apparmor.d/kapea-scan-worker
+#   sudo apparmor_parser -r -W /etc/apparmor.d/kapea-scan-worker
+#
+# Docker Compose / Kubernetes: attach with security_opt / securityContext.
+# This is a starting point — tighten based on your deployment audit.
+
+#include <tunables/global>
+
+profile kapea-scan-worker flags=(attach_disconnected,mediate_deleted) {
+  #include <abstractions/base>
+
+  /usr/local/bin/scan-worker mr,
+
+  # Worker scratch space (disposable per job)
+  /tmp/kapea/** rw,
+  owner /tmp/kapea/** rw,
+
+  # Read-only YARA rules mount
+  /rules/** r,
+
+  # Network: Redis (BullMQ), ClamAV, object storage (MinIO/S3)
+  network tcp,
+
+  # Deny execution of uploaded/quarantined content
+  deny /tmp/kapea/** ix,
+
+  # Deny privilege escalation
+  deny capability sys_admin,
+  deny capability sys_module,
+  deny mount,
+
+  # Deny sensitive proc writes
+  deny /proc/sys/** w,
+  deny /sys/** w,
+}

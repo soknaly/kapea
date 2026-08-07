@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kapea-config
+  namespace: kapea
+data:
+  NODE_ENV: production
+  LOG_LEVEL: info
+  API_PORT: "3000"
+  RESULT_CONSUMER_PORT: "3001"
+  RETENTION_WORKER_PORT: "3003"
+  STORAGE_PROVIDER: minio
+  STORAGE_BUCKET: quarantine
+  S3_BUCKET: quarantine
+  S3_REGION: us-east-1
+  S3_FORCE_PATH_STYLE: "true"
+  REDIS_URL: redis://redis.kapea.svc.cluster.local:6379
+  DATABASE_URL: postgresql://kapea:CHANGE_ME@postgres.kapea.svc.cluster.local:5432/kapea
+  S3_ENDPOINT: http://minio.kapea.svc.cluster.local:9000
+  CLAMAV_HOST: clamav.kapea.svc.cluster.local
+  CLAMAV_PORT: "3310"
+  YARA_RULES_PATH: /rules
+  WORK_DIR: /tmp/kapea
+  MAX_UPLOAD_BYTES: "104857600"
+  SCAN_TIMEOUT_SECONDS: "60"
+  RETENTION_INTERVAL_MS: "300000"
+  REQUIRE_API_KEY: "true"

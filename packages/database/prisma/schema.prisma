@@ -1,0 +1,169 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum ScanStatus {
+  UPLOADING
+  QUEUED
+  SCANNING
+  COMPLETED
+  FAILED
+  EXPIRED
+  DELETED
+}
+
+enum Verdict {
+  CLEAN
+  SUSPICIOUS
+  MALICIOUS
+  UNKNOWN
+  SCAN_FAILED
+}
+
+enum FileSource {
+  WEB_API
+  TELEGRAM
+}
+
+model File {
+  id                 String     @id
+  originalFilename   String     @map("original_filename")
+  sanitizedFilename  String     @map("sanitized_filename")
+  storageBucket      String     @map("storage_bucket")
+  storageKey         String     @map("storage_key")
+  sizeBytes          BigInt     @map("size_bytes")
+  claimedMimeType    String?    @map("claimed_mime_type")
+  detectedMimeType   String?    @map("detected_mime_type")
+  extension          String?
+  sha256             String?
+  sha1               String?
+  md5                String?
+  source             FileSource
+  sourceReference    String?    @map("source_reference")
+  uploadedBy         String?    @map("uploaded_by")
+  createdAt          DateTime   @default(now()) @map("created_at")
+  expiresAt          DateTime?  @map("expires_at")
+  deletedAt          DateTime?  @map("deleted_at")
+
+  scanJobs ScanJob[]
+
+  @@index([sha256])
+  @@map("files")
+}
+
+model ScanJob {
+  id              String     @id
+  fileId          String     @map("file_id")
+  status          ScanStatus @default(QUEUED)
+  progress        Int        @default(0)
+  currentStage    String?    @map("current_stage")
+  attemptCount    Int        @default(0) @map("attempt_count")
+  messageEventId  String?    @map("message_event_id")
+  startedAt       DateTime?  @map("started_at")
+  completedAt     DateTime?  @map("completed_at")
+  failedAt        DateTime?  @map("failed_at")
+  failureCode     String?    @map("failure_code")
+  failureMessage  String?    @map("failure_message")
+  workerId        String?    @map("worker_id")
+  createdAt       DateTime   @default(now()) @map("created_at")
+  updatedAt       DateTime   @updatedAt @map("updated_at")
+
+  file   File        @relation(fields: [fileId], references: [id])
+  result ScanResult?
+
+  @@index([status])
+  @@index([fileId])
+  @@map("scan_jobs")
+}
+
+model ScanResult {
+  id                     String   @id
+  scanJobId              String   @unique @map("scan_job_id")
+  verdict                Verdict
+  automatedVerdict       Verdict  @map("automated_verdict")
+  riskScore              Int      @map("risk_score")
+  summary                String
+  scanComplete           Boolean  @map("scan_complete")
+  clamavVersion          String?  @map("clamav_version")
+  clamavSignatureVersion String?  @map("clamav_signature_version")
+  yaraRuleVersion        String?  @map("yara_rule_version")
+  scannerVersion         String?  @map("scanner_version")
+  eventVersion           Int      @map("event_version")
+  threatLabelsJson       Json?    @map("threat_labels_json")
+  createdAt              DateTime @default(now()) @map("created_at")
+
+  scanJob    ScanJob               @relation(fields: [scanJobId], references: [id])
+  findings   ScanFinding[]
+  indicators ExtractedIndicator[]
+
+  @@map("scan_results")
+}
+
+model ScanFinding {
+  id                  String   @id
+  scanResultId        String   @map("scan_result_id")
+  engine              String
+  code                String
+  category            String
+  severity            Int
+  confidence          Int
+  message             String
+  technicalDetailsJson Json?   @map("technical_details_json")
+  pathInsideArchive   String?  @map("path_inside_archive")
+  parentFileReference String?  @map("parent_file_reference")
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  scanResult ScanResult @relation(fields: [scanResultId], references: [id])
+
+  @@index([scanResultId])
+  @@map("scan_findings")
+}
+
+model ExtractedIndicator {
+  id                 String   @id
+  scanResultId       String   @map("scan_result_id")
+  indicatorType      String   @map("indicator_type")
+  indicatorValue     String   @map("indicator_value")
+  sourcePath         String?  @map("source_path")
+  reputation         String?
+  reputationProvider String?  @map("reputation_provider")
+  createdAt          DateTime @default(now()) @map("created_at")
+
+  scanResult ScanResult @relation(fields: [scanResultId], references: [id])
+
+  @@index([scanResultId])
+  @@map("extracted_indicators")
+}
+
+model AuditLog {
+  id           String   @id
+  actorType    String   @map("actor_type")
+  actorId      String?  @map("actor_id")
+  action       String
+  entityType   String   @map("entity_type")
+  entityId     String   @map("entity_id")
+  metadataJson Json?    @map("metadata_json")
+  ipAddress    String?  @map("ip_address")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@index([entityType, entityId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+model ScannerDefinition {
+  id          String   @id
+  engine      String   @unique
+  version     String
+  status      String
+  installedAt DateTime @map("installed_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  metadataJson Json?   @map("metadata_json")
+
+  @@map("scanner_definitions")
+}

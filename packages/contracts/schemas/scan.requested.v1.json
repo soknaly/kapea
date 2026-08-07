@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kapea.local/schemas/scan.requested.v1.json",
+  "title": "ScanRequestedEvent",
+  "type": "object",
+  "required": [
+    "eventId",
+    "eventType",
+    "eventVersion",
+    "occurredAt",
+    "correlationId",
+    "scanId",
+    "fileId",
+    "traceId",
+    "storage",
+    "expectedSizeBytes",
+    "originalFilename",
+    "limits"
+  ],
+  "properties": {
+    "eventId": { "type": "string" },
+    "eventType": { "const": "scan.requested" },
+    "eventVersion": { "const": 1 },
+    "occurredAt": { "type": "string", "format": "date-time" },
+    "correlationId": { "type": "string" },
+    "scanId": { "type": "string" },
+    "fileId": { "type": "string" },
+    "traceId": { "type": "string" },
+    "storage": {
+      "type": "object",
+      "required": ["bucket", "objectKey"],
+      "properties": {
+        "bucket": { "type": "string" },
+        "objectKey": { "type": "string" }
+      }
+    },
+    "expectedSizeBytes": { "type": "integer", "minimum": 0 },
+    "expectedSha256": { "type": ["string", "null"] },
+    "originalFilename": { "type": "string" },
+    "claimedMimeType": { "type": ["string", "null"] },
+    "limits": {
+      "type": "object",
+      "required": ["maxExtractedBytes", "maxFiles", "maxDepth", "timeoutSeconds"],
+      "properties": {
+        "maxExtractedBytes": { "type": "integer" },
+        "maxFiles": { "type": "integer" },
+        "maxDepth": { "type": "integer" },
+        "timeoutSeconds": { "type": "integer" }
+      }
+    }
+  }
+}

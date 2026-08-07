@@ -1,0 +1,45 @@
+[package]
+name = "kapea-scan-worker"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+description = "KAPEA Rust scanning worker — hostile-file processing plane"
+
+[[bin]]
+name = "scan-worker"
+path = "src/main.rs"
+
+[dependencies]
+anyhow.workspace = true
+async-trait.workspace = true
+bullmq.workspace = true
+bytes.workspace = true
+chrono.workspace = true
+clap.workspace = true
+futures.workspace = true
+md-5.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+sha1.workspace = true
+sha2.workspace = true
+thiserror.workspace = true
+tokio.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+uuid.workspace = true
+ulid.workspace = true
+reqwest.workspace = true
+aws-config.workspace = true
+aws-sdk-s3.workspace = true
+aws-credential-types.workspace = true
+infer.workspace = true
+hex.workspace = true
+goblin.workspace = true
+zip.workspace = true
+flate2.workspace = true
+tar.workspace = true
+regex.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true

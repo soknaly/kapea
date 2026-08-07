@@ -1,0 +1,32 @@
+{
+  "name": "kapea",
+  "version": "0.1.0",
+  "private": true,
+  "description": "KAPEA — secure file malware scanning platform (NestJS control plane + Rust scanning workers)",
+  "scripts": {
+    "build": "pnpm -r --filter './apps/*' --filter './packages/*' run build",
+    "build:api": "pnpm --filter @kapea/api build",
+    "build:rust": "cargo build --manifest-path rust/Cargo.toml",
+    "dev:api": "pnpm --filter @kapea/api start:dev",
+    "dev:result-consumer": "pnpm --filter @kapea/result-consumer start:dev",
+    "dev:retention-worker": "pnpm --filter @kapea/retention-worker start:dev",
+    "lint": "pnpm -r --filter './apps/*' --filter './packages/*' run lint",
+    "test": "pnpm -r --filter './apps/*' --filter './packages/*' run test",
+    "test:rust": "cargo test --manifest-path rust/Cargo.toml",
+    "scan:file": "bash scripts/scan-file.sh",
+    "typecheck": "pnpm -r --filter './apps/*' --filter './packages/*' run typecheck",
+    "docker:up": "docker compose -f infrastructure/docker/docker-compose.yml up -d",
+    "docker:down": "docker compose -f infrastructure/docker/docker-compose.yml down",
+    "docker:logs": "docker compose -f infrastructure/docker/docker-compose.yml logs -f",
+    "stack:up": "bash scripts/stack-up.sh",
+    "stack:up:compose": "MODE=compose bash scripts/stack-up.sh",
+    "stack:down": "bash scripts/stack-down.sh",
+    "stack:down:full": "FULL=1 bash scripts/stack-down.sh",
+    "e2e": "STRICT=1 bash scripts/e2e-smoke.sh"
+  },
+  "engines": {
+    "node": ">=20",
+    "pnpm": ">=9"
+  },
+  "packageManager": "pnpm@11.18.0"
+}

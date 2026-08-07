@@ -1,0 +1,47 @@
+# syntax=docker/dockerfile:1
+# Build from repo root: docker build -f infrastructure/docker/Dockerfile.scan-worker .
+
+FROM rust:bookworm AS builder
+WORKDIR /app
+COPY rust/Cargo.toml rust/Cargo.lock rust/
+COPY rust/scan-worker rust/scan-worker
+RUN cargo build --release --manifest-path rust/Cargo.toml
+
+FROM debian:bookworm-slim AS runner
+ARG TARGETARCH
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends ca-certificates curl p7zip-full unrar-free \
+  && UNRAR_BIN="$(command -v unrar-free || command -v unrar || true)" \
+  && if [ -n "$UNRAR_BIN" ]; then ln -sf "$UNRAR_BIN" /usr/local/bin/unrar; fi \
+  && case "$TARGETARCH" in \
+       amd64) RAR_ARCH=x64 ;; \
+       arm64) RAR_ARCH=arm ;; \
+       *) RAR_ARCH="" ;; \
+     esac \
+  && if [ -n "$RAR_ARCH" ]; then \
+       for ver in 712 711 710 700; do \
+         url="https://www.rarlab.com/rar/rarlinux-${RAR_ARCH}-${ver}.tar.gz"; \
+         if curl -fsSL "$url" -o /tmp/rar.tgz; then \
+           tar -xzf /tmp/rar.tgz -C /tmp \
+             && install -m 0755 /tmp/rar/unrar /usr/local/bin/unrar \
+             && rm -rf /tmp/rar /tmp/rar.tgz \
+             && break; \
+         fi; \
+         rm -f /tmp/rar.tgz; \
+       done; \
+     fi \
+  && apt-get purge -y curl \
+  && apt-get autoremove -y \
+  && rm -rf /var/lib/apt/lists/* \
+  && groupadd --system --gid 1001 kapea \
+  && useradd --system --uid 1001 --gid kapea --home-dir /tmp/kapea kapea \
+  && mkdir -p /tmp/kapea /rules \
+  && chown -R kapea:kapea /tmp/kapea /rules \
+  && test -x /usr/local/bin/unrar
+COPY --from=builder /app/rust/target/release/scan-worker /usr/local/bin/scan-worker
+USER kapea
+ENV WORK_DIR=/tmp/kapea \
+  YARA_RULES_PATH=/rules \
+  UNRAR_PATH=/usr/local/bin/unrar \
+  SEVEN_Z_PATH=/usr/bin/7z
+ENTRYPOINT ["/usr/local/bin/scan-worker"]

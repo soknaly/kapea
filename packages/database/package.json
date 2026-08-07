@@ -1,0 +1,30 @@
+{
+  "name": "@kapea/database",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Prisma schema, migrations, and NestJS database module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "echo 'no lint configured'",
+    "test": "echo 'no tests yet'",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:deploy": "prisma migrate deploy"
+  },
+  "dependencies": {
+    "@nestjs/common": "^11.0.1",
+    "@prisma/client": "^6.5.0"
+  },
+  "devDependencies": {
+    "prisma": "^6.5.0",
+    "tsx": "^4.19.3",
+    "typescript": "^5.7.3"
+  },
+  "prisma": {
+    "schema": "prisma/schema.prisma",
+    "seed": "tsx prisma/seed.ts"
+  }
+}

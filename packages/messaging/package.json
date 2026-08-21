@@ -13,7 +13,7 @@
   },
   "dependencies": {
     "@kapea/contracts": "workspace:*",
-    "@nestjs/common": "^11.0.1",
+    "@nestjs/common": "^11.2.1",
     "@nestjs/config": "^4.0.1",
     "bullmq": "latest"
   },
